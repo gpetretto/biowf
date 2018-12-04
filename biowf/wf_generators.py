@@ -12,14 +12,14 @@ def generate_simulation_analysis_loop_wf(n_structures=10, calculation_options=No
     analyse_task = AnalyseTask(n_structures=n_structures)
     analyse_fw = Firework(analyse_task, name="analyse and check", parents=[generate_fw])
 
-    wf = Workflow([generate_fw, analyse_fw], "Loop workflow")
+    wf = Workflow([generate_fw, analyse_fw], name="Loop workflow")
 
     return wf
 
 
 def generate_pipeline_wf(db_data, item_id, fail=False):
 
-    get_fw = Firework(GetFromDBTask(item_id=item_id, db_data=db_data), name="Fect from DB")
+    get_fw = Firework(GetFromDBTask(item_id=item_id, db_data=db_data), name="Fetch from DB")
 
     fws = [get_fw]
 

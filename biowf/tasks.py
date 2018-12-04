@@ -16,7 +16,7 @@ class RunMdTask(FiretaskBase):
         logger.info("Running MD calculation on structure {}".format(self.get("structure")))
         time.sleep(0)
 
-        # return FWAction(update_spec={"_push": {"md_result": {self.get("structure"): random.random()}})
+        # return FWAction(mod_spec={"_push": {"md_result": random.random()})
         return FWAction(mod_spec={"_set": {"md_results->structure{}".format(self.get("structure")): random.random()}})
 
 
@@ -58,8 +58,8 @@ class AnalyseTask(FiretaskBase):
             self.write_to_db()
         else:
             logger.info("Generating new set of calculations")
-            from biowf.wf_generators import generate_simulation_analysis_loop
-            new_wf = generate_simulation_analysis_loop(n_structures=self.get("n_structures"))
+            from biowf.wf_generators import generate_simulation_analysis_loop_wf
+            new_wf = generate_simulation_analysis_loop_wf(n_structures=self.get("n_structures")+1)
             new_wf.fws[-1].spec["success"] = True
             return FWAction(detours=new_wf)
 
