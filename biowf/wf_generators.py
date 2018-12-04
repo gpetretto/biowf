@@ -4,6 +4,15 @@ from fireworks import Firework, Workflow
 
 
 def generate_simulation_analysis_loop_wf(n_structures=10, calculation_options=None):
+    """
+    Generates an example workflow for the loop analysis model.
+    Requires an number of structures for the sake of simplicity, but the number
+    could be also dynamically determined at run time.
+
+    Args:
+         n_structures: the number of structures that will be produced.
+         calculation_options: the options for the calculations.
+    """
 
     generate_task = GenerateStructuresTask(n_structures=n_structures,
                                            calculation_options=calculation_options)
@@ -18,6 +27,17 @@ def generate_simulation_analysis_loop_wf(n_structures=10, calculation_options=No
 
 
 def generate_pipeline_wf(db_data, item_id, fail=False):
+    """
+    Generates an example workflow for the pipeline model.
+
+    It can generate examples of workflows that complete successfully or that
+    fail during one of the steps.
+
+    Args:
+         db_data: data to connect to the database.
+         item_id: the identifier used to select the materials.
+         fail: if True triggers a failure in one of the steps of the workflow.
+    """
 
     get_fw = Firework(GetFromDBTask(item_id=item_id, db_data=db_data), name="Fetch from DB")
 

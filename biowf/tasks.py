@@ -9,39 +9,58 @@ logger = get_logger(__name__)
 
 @explicit_serialize
 class RunMdTask(FiretaskBase):
+    """
+    Task running a fake MD calculation.
+    May take a structure and input parameters for the calculation
+    """
 
-    required_params = ["structure"]
+    required_params = ["structure", "calculation_options"]
 
     def run_task(self, fw_spec):
         logger.info("Running MD calculation on structure {}".format(self.get("structure")))
         time.sleep(0)
 
-        # return FWAction(mod_spec={"_push": {"md_result": random.random()})
-        return FWAction(mod_spec={"_set": {"md_results->structure{}".format(self.get("structure")): random.random()}})
+        result = random.random()
+        logger.info("Structure {} gave result: {}".format(self.get("structure"), result))
+        return FWAction(mod_spec={"_set": {"md_results->structure{}".format(self.get("structure")): result}})
 
 
 @explicit_serialize
 class GenerateStructuresTask(FiretaskBase):
+    """
+    Task that based on an initial configuration generates an arbitrary number
+    of structures and prepares tasks to run MD calculations on them.
+    Generates the following steps in the workflows.
+    """
 
-    required_params = ["n_structures"]
+    required_params = ["n_structures", "calculation_options"]
 
     def run_task(self, fw_spec):
 
         structures = self.generate_structures()
+        options = self["calculation_options"]
 
         fws = []
 
         for s in structures:
-            fws.append(Firework(RunMdTask(structure=s), name="run_md_{}".format(s)))
+            fws.append(Firework(RunMdTask(structure=s, calculation_options=options), name="run_md_{}".format(s)))
 
         return FWAction(detours=fws)
 
     def generate_structures(self):
+        """
+        Code to generate the set of structures to be simulated.
+        """
         return range(self["n_structures"])
 
 
 @explicit_serialize
 class AnalyseTask(FiretaskBase):
+    """
+    Analyses the results coming from the previous MD calculations and
+    decides whether the workflow should continue or not.
+    If needed generates a new set of Fireworks.
+    """
 
     required_params = ["n_structures"]
 
@@ -72,6 +91,10 @@ class AnalyseTask(FiretaskBase):
 
 @explicit_serialize
 class GetFromDBTask(FiretaskBase):
+    """
+    Task to extract an item from a DB that will be used for subsequent tasks.
+    The item is passed to the spec of the children in the "item_to_process" key.
+    """
 
     required_params = ["item_id", "db_data"]
 
@@ -87,6 +110,9 @@ class GetFromDBTask(FiretaskBase):
 
 @explicit_serialize
 class SaveToDBTask(FiretaskBase):
+    """
+    Saves the result in a database
+    """
     required_params = ["item_id"]
 
     def run_task(self, fw_spec):
@@ -100,6 +126,13 @@ class SaveToDBTask(FiretaskBase):
 
 @explicit_serialize
 class ActionTask(FiretaskBase):
+    """
+    Performs some kind of action on the iterm passed by a previous task
+    in an "item_to_process" key in the spec.
+    At the end will pass the processed item in the spec of the children in
+    the "item_to_process" key.
+    """
+
     required_params = ["action"]
 
     def run_task(self, fw_spec):
@@ -110,7 +143,10 @@ class ActionTask(FiretaskBase):
         return FWAction(update_spec={"item_to_process": new_item})
 
     def process_item(self, item):
+        """
+        Performs the action on the item. May fail.
+        """
         if self.get("fail", False):
             raise RuntimeError("Error while processing item {}".format(item))
 
-        return item
+        return item+"-"+self["action"][-1]
