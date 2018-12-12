@@ -26,7 +26,7 @@ def generate_simulation_analysis_loop_wf(n_structures=10, calculation_options=No
     return wf
 
 
-def generate_pipeline_wf(db_data, item_id, fail=False):
+def generate_pipeline_wf(db_data, item_id, fail=False, preserve_launch_dir=False):
     """
     Generates an example workflow for the pipeline model.
 
@@ -37,6 +37,8 @@ def generate_pipeline_wf(db_data, item_id, fail=False):
          db_data: data to connect to the database.
          item_id: the identifier used to select the materials.
          fail: if True triggers a failure in one of the steps of the workflow.
+         preserve_launch_dir: if True all the actions will be performed using the
+            same directory.
     """
 
     get_fw = Firework(GetFromDBTask(item_id=item_id, db_data=db_data), name="Fetch from DB")
@@ -45,12 +47,14 @@ def generate_pipeline_wf(db_data, item_id, fail=False):
 
     parent = get_fw
     for i in range(5):
-        a_fw = Firework(ActionTask(action="action{}".format(i)), parents=parent, name="task {}".format(i))
+        a_fw = Firework(ActionTask(action="action{}".format(i), preserve_launch_dir=preserve_launch_dir),
+                        parents=parent, name="task {}".format(i))
         parent = a_fw
         fws.append(a_fw)
 
     if fail:
-        a_fw = Firework(ActionTask(action="action5", fail=True), parents=parent, name="task 5")
+        a_fw = Firework(ActionTask(action="action5", fail=True, preserve_launch_dir=preserve_launch_dir),
+                        parents=parent, name="task 5")
         parent = a_fw
         fws.append(a_fw)
 

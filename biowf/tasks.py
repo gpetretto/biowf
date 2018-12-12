@@ -1,5 +1,6 @@
 import time
 import random
+import os
 from fireworks import FiretaskBase, FWAction, Firework
 from fireworks.utilities.fw_utilities import explicit_serialize
 from biowf.utils import get_logger
@@ -134,13 +135,17 @@ class ActionTask(FiretaskBase):
     """
 
     required_params = ["action"]
+    optional_params = ["preserve_launch_dir"]
 
     def run_task(self, fw_spec):
         item = fw_spec.get("item_to_process")
         logger.info("processing item {} with action: {}".format(item, self.get("action")))
         new_item = self.process_item(item)
 
-        return FWAction(update_spec={"item_to_process": new_item})
+        update_spec = {"item_to_process": new_item}
+        if self.get("preserve_launch_dir", False):
+            update_spec["_launch_dir"] = os.getcwd()
+        return FWAction(update_spec=update_spec)
 
     def process_item(self, item):
         """
